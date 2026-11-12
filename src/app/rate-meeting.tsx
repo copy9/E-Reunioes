@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, EmptyState } from '../components/ui';
+import { spaces, type Space } from '../data/seed';
+import { googleReviewUrl } from '../data/trust';
 import { useApp } from '../store/AppContext';
 import { colors } from '../theme/colors';
 
 // Avaliação do encontro: pessoa (pontualidade, respeito) e local (ambiente, segurança).
-// Só é publicada depois que o organizador envia, e alimenta a reputação de todos.
+// Depois de avaliar um local parceiro bem avaliado, convida a pessoa a avaliar o local no Google.
 function StarRow({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <View style={styles.starRow}>
@@ -30,6 +32,7 @@ export default function RateMeeting() {
   const [respect, setRespect] = useState(existing?.respect ?? 0);
   const [venue, setVenue] = useState(existing?.venue ?? 0);
   const [comment, setComment] = useState(existing?.comment ?? '');
+  const [googleSpace, setGoogleSpace] = useState<Space | null>(null);
 
   if (!meeting) {
     return (
@@ -40,16 +43,51 @@ export default function RateMeeting() {
     );
   }
 
+  // Só convida para o Google quando o encontro foi em um espaço parceiro e o local foi bem avaliado.
+  const partnerSpace = spaces.find((s) => s.name === meeting.place);
+
   const submit = () => {
     if (!punctuality || !respect || !venue) {
       Alert.alert('Avaliação incompleta', 'Dê uma nota para pontualidade, respeito e local.');
       return;
     }
     saveReview(meeting.id, { punctuality, respect, venue, comment: comment.trim() });
+
+    if (partnerSpace && venue >= 4) {
+      setGoogleSpace(partnerSpace);
+      return;
+    }
     Alert.alert('Obrigado pela avaliação', 'Sua avaliação ajuda a manter os encontros seguros.', [
       { text: 'OK', onPress: () => router.back() },
     ]);
   };
+
+  const openGoogle = async (space: Space) => {
+    const url = googleReviewUrl(space.name, space.address);
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Não foi possível abrir', 'Tente novamente pelo Google Maps.');
+    }
+  };
+
+  // Tela de convite para avaliar o local no Google, depois da avaliação do encontro.
+  if (googleSpace) {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <Stack.Screen options={{ title: 'Obrigado!' }} />
+        <Card style={styles.googleCard}>
+          <Ionicons name="star" size={34} color={colors.gold} />
+          <Text style={styles.googleTitle}>Avalie {googleSpace.name} no Google</Text>
+          <Text style={styles.googleText}>
+            Sua avaliação ajuda outras pessoas a encontrarem um lugar bom e seguro para se reunir. Leva menos de um minuto.
+          </Text>
+          <Button title="Avaliar no Google" onPress={() => openGoogle(googleSpace)} style={styles.action} />
+          <Button title="Agora não" variant="outline" style={styles.action} onPress={() => router.back()} />
+        </Card>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -103,4 +141,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
   },
+  googleCard: { alignItems: 'center', padding: 24, marginTop: 8 },
+  googleTitle: { color: colors.navy, fontSize: 19, fontWeight: '700', marginTop: 12, textAlign: 'center' },
+  googleText: { color: colors.text, marginTop: 8, textAlign: 'center', lineHeight: 21 },
+  action: { marginTop: 12, alignSelf: 'stretch' },
 });

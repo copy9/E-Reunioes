@@ -1,5 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNav, Badge, Button, Card, EmptyState } from '../components/ui';
+import { spaces, type Meeting, type Space } from '../data/seed';
+import { googleReviewUrl } from '../data/trust';
 import { useApp } from '../store/AppContext';
 import { colors } from '../theme/colors';
 
@@ -10,6 +12,18 @@ export default function Notifications() {
   const pending = invitations.filter((i) => i.status === 'pendente');
   const answered = invitations.filter((i) => i.status !== 'pendente');
   const today = meetings.filter((m) => m.group === 'hoje');
+  // Encontros de hoje em espaços parceiros: convida todos os participantes a avaliar o local no Google.
+  const googleReminders = today
+    .map((m) => ({ meeting: m, space: spaces.find((s) => s.name === m.place) }))
+    .filter((r): r is { meeting: Meeting; space: Space } => !!r.space);
+
+  const openGoogle = async (name: string, address: string) => {
+    try {
+      await Linking.openURL(googleReviewUrl(name, address));
+    } catch {
+      Alert.alert('Não foi possível abrir', 'Tente novamente pelo Google Maps.');
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -42,6 +56,25 @@ export default function Notifications() {
                   </View>
                   <Badge label={statusLabel[inv.status]} tone={inv.status === 'aceita' ? 'navy' : 'gold'} />
                 </View>
+              </Card>
+            ))}
+          </>
+        )}
+
+        {googleReminders.length > 0 && (
+          <>
+            <Text style={styles.section}>AVALIE O LOCAL</Text>
+            {googleReminders.map(({ meeting, space }) => (
+              <Card key={`g-${meeting.id}`}>
+                <Text style={styles.title}>Como foi o encontro em {space.name}?</Text>
+                <Text style={styles.meta}>
+                  Avalie o local no Google. Sua opinião ajuda outras pessoas a escolherem um lugar bom e seguro.
+                </Text>
+                <Button
+                  title="Avaliar no Google"
+                  style={styles.action}
+                  onPress={() => openGoogle(space.name, space.address)}
+                />
               </Card>
             ))}
           </>

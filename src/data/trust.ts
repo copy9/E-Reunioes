@@ -70,6 +70,12 @@ export const menu: MenuItem[] = [
   { id: 'mn4', name: 'Bolo do dia', price: 14 },
 ];
 
+// Link para abrir o local no Google Maps, de onde a pessoa escreve a avaliação.
+// Usa só o nome e o endereço públicos do comércio.
+export function googleReviewUrl(name: string, address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`;
+}
+
 export type VerificationStep = 'email' | 'phone' | 'document' | 'selfie';
 
 export const verificationSteps: { key: VerificationStep; label: string; hint: string }[] = [
