@@ -1,26 +1,35 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { useApp } from '../store/AppContext';
 import { colors } from '../theme/colors';
 
 type AccessType = 'user' | 'business';
 
-// Acesso sem backend: valida os campos e segue para o início.
-// Recuperação de senha e cadastro ainda não têm backend, então exibem um aviso.
+// Acesso sem backend: valida os campos, cria a sessão e leva ao painel certo.
 export default function Login() {
+  const { login } = useApp();
   const [type, setType] = useState<AccessType>('user');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
 
   const enter = () => {
-    if (!identifier.trim() || !password.trim()) {
+    const id = identifier.trim();
+    if (!id || !password.trim()) {
       Alert.alert('Campos obrigatórios', 'Preencha o identificador e a senha para entrar.');
       return;
     }
-    if (type === 'business' && identifier.replace(/\D/g, '').length !== 14 && !identifier.includes('@')) {
-      Alert.alert('CNPJ inválido', 'Informe um CNPJ com 14 dígitos ou um e-mail.');
+    if (type === 'business') {
+      const digits = id.replace(/\D/g, '');
+      if (digits.length !== 14 && !id.includes('@')) {
+        Alert.alert('CNPJ inválido', 'Informe um CNPJ com 14 dígitos ou um e-mail.');
+        return;
+      }
+      login({ type: 'business', name: id });
+      router.replace('/partner-dashboard');
       return;
     }
+    login({ type: 'user', name: id.split('@')[0] });
     router.replace('/home');
   };
 
@@ -65,11 +74,14 @@ export default function Login() {
         <Text style={styles.primaryText}>Entrar</Text>
       </Pressable>
 
-      <Pressable onPress={() => Alert.alert('Senha', 'A recuperação de senha será liberada com o backend.')}>
+      <Pressable onPress={() => router.push('/forgot-password')}>
         <Text style={styles.link}>Esqueceu a senha?</Text>
       </Pressable>
-      <Pressable onPress={() => Alert.alert('Cadastro', 'O cadastro será liberado com o backend.')}>
+      <Pressable onPress={() => router.push('/signup')}>
         <Text style={styles.link}>Criar conta</Text>
+      </Pressable>
+      <Pressable onPress={() => router.push('/partner-signup')}>
+        <Text style={styles.link}>Quero ser um comércio parceiro</Text>
       </Pressable>
     </View>
   );

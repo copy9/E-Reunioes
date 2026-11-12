@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomNav, Button, Card } from '../components/ui';
 import { events, type EventItem } from '../data/seed';
@@ -10,12 +11,8 @@ export default function Events() {
 
   const renderAction = (event: EventItem) => {
     const status = eventStatus[event.id] ?? 'none';
-    if (status === 'requested') {
-      return <Button title="Pedido enviado" variant="disabled" />;
-    }
-    if (status === 'joined') {
-      return <Button title="Inscrito" variant="success" />;
-    }
+    if (status === 'requested') return <Button title="Pedido enviado" variant="disabled" />;
+    if (status === 'joined') return <Button title="Inscrito" variant="success" />;
     return (
       <Button
         title={event.mode === 'request' ? 'Pedir Participação' : 'Ingressar'}
@@ -29,7 +26,10 @@ export default function Events() {
       <ScrollView contentContainerStyle={styles.content}>
         {events.map((event) => (
           <Card key={event.id}>
-            <View style={styles.row}>
+            <Pressable
+              style={styles.row}
+              onPress={() => router.push({ pathname: '/event-details', params: { id: event.id } })}
+            >
               <View style={styles.iconCircle}>
                 <Ionicons name={event.icon} size={26} color={colors.navy} />
               </View>
@@ -38,12 +38,12 @@ export default function Events() {
                 <Text style={styles.meta}>{event.place}</Text>
                 <Text style={styles.meta}>{event.date}</Text>
               </View>
-            </View>
+            </Pressable>
             {renderAction(event)}
           </Card>
         ))}
       </ScrollView>
-      <BottomNav active="events" />
+      <BottomNav active="notifications" />
     </View>
   );
 }

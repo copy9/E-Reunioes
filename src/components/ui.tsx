@@ -93,14 +93,16 @@ export function Stars({ value }: { value: number }) {
 }
 
 // Barra inferior do dashboard, como no mockup.
-export function BottomNav({ active }: { active: 'home' | 'events' | 'create' | 'meetings' | 'profile' }) {
+export type NavKey = 'home' | 'notifications' | 'create' | 'meetings' | 'profile';
+
+export function BottomNav({ active }: { active: NavKey }) {
   const insets = useSafeAreaInsets();
-  const items: { key: typeof active; icon: IconName; route: Href }[] = [
+  const items: { key: NavKey; icon: IconName; route: Href }[] = [
     { key: 'home', icon: 'home-outline', route: '/home' },
-    { key: 'events', icon: 'notifications-outline', route: '/events' },
+    { key: 'notifications', icon: 'notifications-outline', route: '/notifications' },
     { key: 'create', icon: 'add-circle-outline', route: '/create-meeting' },
     { key: 'meetings', icon: 'calendar-outline', route: '/my-meetings' },
-    { key: 'profile', icon: 'person-outline', route: '/login' },
+    { key: 'profile', icon: 'person-outline', route: '/profile' },
   ];
   return (
     <View style={[styles.nav, { paddingBottom: Math.max(insets.bottom, 10) }]}>

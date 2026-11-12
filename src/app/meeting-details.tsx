@@ -1,12 +1,13 @@
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Badge, Button, Card, EmptyState } from '../components/ui';
+import { people } from '../data/trust';
 import { useApp } from '../store/AppContext';
 import { colors } from '../theme/colors';
 
 export default function MeetingDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { meetings, toggleConfirm, removeMeeting } = useApp();
+  const { meetings, toggleConfirm, removeMeeting, reviews } = useApp();
   const meeting = meetings.find((m) => m.id === id);
 
   if (!meeting) {
@@ -17,6 +18,8 @@ export default function MeetingDetails() {
       </View>
     );
   }
+
+  const reviewed = !!reviews[meeting.id];
 
   const cancel = () => {
     Alert.alert('Cancelar reunião', 'Tem certeza que quer cancelar esta reunião?', [
@@ -34,6 +37,7 @@ export default function MeetingDetails() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <Stack.Screen options={{ title: 'Detalhes da Reunião' }} />
       <Card>
         <Text style={styles.title}>{meeting.title}</Text>
         <View style={styles.badges}>
@@ -47,19 +51,40 @@ export default function MeetingDetails() {
 
       <Card>
         <Text style={styles.section}>Participantes</Text>
-        {meeting.participants.map((p) => (
-          <Text key={p} style={styles.line}>
-            • {p}
-          </Text>
-        ))}
+        {meeting.participants.map((p) => {
+          const person = people.find((x) => x.name === p);
+          return person ? (
+            <Pressable key={p} onPress={() => router.push({ pathname: '/person-profile', params: { name: p } })}>
+              <Text style={styles.link}>
+                {p} {person.verified ? '· verificado' : ''} · ver perfil
+              </Text>
+            </Pressable>
+          ) : (
+            <Text key={p} style={styles.line}>
+              • {p}
+            </Text>
+          );
+        })}
       </Card>
 
       <Button
+        title="Segurança do encontro"
+        variant="outline"
+        onPress={() => router.push({ pathname: '/safety', params: { id: meeting.id } })}
+      />
+      <Button
+        title={reviewed ? 'Ver ou editar avaliação' : 'Avaliar encontro'}
+        variant={reviewed ? 'success' : 'primary'}
+        style={styles.action}
+        onPress={() => router.push({ pathname: '/rate-meeting', params: { id: meeting.id } })}
+      />
+      <Button
         title={meeting.confirmed ? 'Cancelar confirmação' : 'Confirmar Presença'}
         variant={meeting.confirmed ? 'outline' : 'primary'}
+        style={styles.action}
         onPress={() => toggleConfirm(meeting.id)}
       />
-      <Button title="Cancelar reunião" variant="outline" style={styles.cancel} onPress={cancel} />
+      <Button title="Cancelar reunião" variant="outline" style={styles.action} onPress={cancel} />
     </ScrollView>
   );
 }
@@ -71,5 +96,6 @@ const styles = StyleSheet.create({
   badges: { flexDirection: 'row', gap: 8, marginVertical: 10 },
   section: { color: colors.navy, fontWeight: '700', marginBottom: 8 },
   line: { color: colors.text, fontSize: 15, marginBottom: 6 },
-  cancel: { marginTop: 12 },
+  link: { color: colors.navy, fontSize: 15, fontWeight: '600', marginBottom: 8, textDecorationLine: 'underline' },
+  action: { marginTop: 12 },
 });
